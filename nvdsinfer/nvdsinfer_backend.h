@@ -132,10 +132,10 @@ class InferBatchBuffer {
   /* Get device buffer pointers for bound layers associated with this batch. */
   virtual std::vector<void*>& getDeviceBuffers() = 0;
   /* Get the data type of the buffer(layer) for a bound layer having index
-   * `bindingIndex`. */
+     * `bindingIndex`. */
   virtual NvDsInferDataType getDataType(int bindingIndex = 0) const = 0;
   /* Get the batch dimensions for the buffer allocated for a bound layer having
-   * index `bindingIndex. */
+     * index `bindingIndex. */
   virtual NvDsInferBatchDims getBatchDims(int bindingIndex = 0) const = 0;
 
  private:
@@ -170,7 +170,7 @@ class BackendContext {
   virtual int getLayerIdx(const std::string& bindingName) = 0;
 
   /* Returns if the bound layer at index `bindingIdx` can support the
-   * provided batch dimensions. */
+     * provided batch dimensions. */
   virtual bool canSupportBatchDims(int bindingIdx,
                                    const NvDsInferBatchDims& batchDims) = 0;
 

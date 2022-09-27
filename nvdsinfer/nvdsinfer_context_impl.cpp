@@ -543,6 +543,15 @@ void InferPostprocessor::freeBatchOutput(
   delete[] batchOutput.outputDeviceBuffers;
 }
 
+// 04-09-2021 kienvt
+bool EndsWith(const char* str, const char* suffix) {
+  if (!str || !suffix) return false;
+  size_t lenstr = strlen(str);
+  size_t lensuffix = strlen(suffix);
+  if (lensuffix > lenstr) return false;
+  return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+}
+
 NvDsInferStatus DetectPostprocessor::initResource(
     const NvDsInferContextInitParams& initParams) {
   RETURN_NVINFER_ERROR(InferPostprocessor::initResource(initParams),

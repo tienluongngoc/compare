@@ -43,7 +43,7 @@ CudaStream::CudaStream(uint flag, int priority) {
 CudaStream::~CudaStream() {
   if (m_Stream != nullptr) {
     CHECK_CUDA_ERR_NO_ACTION(cudaStreamDestroy(m_Stream),
-                             "cudaStreamDestroy failed");
+    "cudaStreamDestroy failed");
   }
 }
 
@@ -54,8 +54,8 @@ CudaEvent::CudaEvent(uint flag) {
 
 CudaEvent::~CudaEvent() {
   if (m_Event != nullptr) {
-    CHECK_CUDA_ERR_NO_ACTION(cudaEventDestroy(m_Event),
-                             "cudaEventDestroy failed");
+    CHECK_CUDA_ERR_NO_ACTION(cudaEventDestroy(m_Event), 
+    "cudaEventDestroy failed");
   }
 }
 
@@ -71,8 +71,8 @@ CudaDeviceBuffer::~CudaDeviceBuffer() {
 }
 
 CudaHostBuffer::CudaHostBuffer(size_t size) : CudaBuffer(size) {
-  CHECK_CUDA_ERR_NO_ACTION(cudaMallocHost(&m_Buf, size),
-                           "cudaMallocHost failed");
+  CHECK_CUDA_ERR_NO_ACTION(cudaMallocHost(&m_Buf, size), 
+  "cudaMallocHost failed");
   m_Size = size;
 }
 
@@ -109,7 +109,7 @@ int TrtBackendContext::getNumBoundLayers() {
 }
 
 bool TrtBackendContext::canSupportBatchDims(
-    int bindingIdx, const NvDsInferBatchDims& batchDims) {
+  int bindingIdx, const NvDsInferBatchDims& batchDims) {
   assert((int)m_AllLayers.size() > bindingIdx);
   assert((int)m_AllLayers[bindingIdx].isInput == 1);
   /* Number of dimensions should match. */
@@ -146,7 +146,7 @@ bool TrtBackendContext::canSupportBatchDims(
 }
 
 std::unique_ptr<TrtBackendContext> createBackendContext(
-    const std::shared_ptr<TrtEngine>& engine) {
+  const std::shared_ptr<TrtEngine>& engine) {
   if (!engine) {
     dsInferError("create backend context failed since TrtEngine is empty");
     return nullptr;
@@ -181,7 +181,7 @@ std::unique_ptr<TrtBackendContext> createBackendContext(
           std::move(cudaCtx), engine);
     } else {
       backend = std::make_unique<ImplicitTrtBackendContext>(std::move(cudaCtx),
-                                                            engine);
+                                                             engine);
     }
   }
 
@@ -211,7 +211,7 @@ NvDsInferStatus ImplicitTrtBackendContext::initialize() {
 }
 
 bool ImplicitTrtBackendContext::canSupportBatchDims(
-    int bindingIdx, const NvDsInferBatchDims& batchDims) {
+  int bindingIdx, const NvDsInferBatchDims& batchDims) {
   assert((int)m_AllLayers.size() > bindingIdx);
   assert(m_AllLayers[bindingIdx].inferDims.numDims == batchDims.dims.numDims);
 
@@ -272,7 +272,7 @@ NvDsInferStatus DlaImplicitTrtBackendContext::enqueueBuffer(
   }
 
   /* Parallel enqueue for multiple DLA engines fails. Serialize enqueue
-   * calls for DLA engines with a static mutex. */
+     * calls for DLA engines with a static mutex. */
   std::unique_lock<std::mutex> locker(sDLAExecutionMutex);
   /* For DLA engine, enqueue batchSize should be equal to the maxBatchSize. */
   if (!m_Context->enqueue(m_MaxBatchSize, bindingBuffers.data(), stream,
@@ -307,10 +307,10 @@ NvDsInferStatus FullDimTrtBackendContext::initialize() {
   for (int i = 0; i < (int)(*m_CudaEngine)->getNbBindings(); i++) {
     if (!(*m_CudaEngine)->bindingIsInput(i)) continue;
 
-    nvinfer1::Dims optDims =
-        (*m_CudaEngine)
-            ->getProfileDimensions(i, m_ProfileIndex,
-                                   nvinfer1::OptProfileSelector::kOPT);
+    nvinfer1::Dims optDims = 
+    (*m_CudaEngine)
+                                 ->getProfileDimensions(i, m_ProfileIndex,
+                                                        nvinfer1::OptProfileSelector::kOPT);
     if (!m_Context->setBindingDimensions(i, optDims)) {
       dsInferError(
           "Failed to initialize fulldim backend when seting "
@@ -337,7 +337,7 @@ NvDsInferStatus FullDimTrtBackendContext::initialize() {
     int batchSize = 0;
 
     /* Split the full dims recieved from getBindingDimensions into batchSize
-     * and rest of the dims. */
+         * and rest of the dims. */
     SplitFullDims(fullInferDims, inferDims, batchSize);
     layerInfo.inferDims = inferDims;
   }
@@ -359,10 +359,10 @@ NvDsInferStatus FullDimTrtBackendContext::enqueueBuffer(
     NvDsInferBatchDims batchDims = buffer->getBatchDims(iL);
     assert(batchDims.batchSize == buffer->getBatchDims(0).batchSize);
 
-    if (batchDims.batchSize <
-        m_AllLayers[iL].profileDims[kSELECTOR_MIN].batchSize)
-      batchDims.batchSize =
-          m_AllLayers[iL].profileDims[kSELECTOR_MIN].batchSize;
+    if (batchDims.batchSize < 
+    m_AllLayers[iL].profileDims[kSELECTOR_MIN].batchSize)
+      batchDims.batchSize = 
+      m_AllLayers[iL].profileDims[kSELECTOR_MIN].batchSize;
 
     if (!canSupportBatchDims(iL, batchDims)) {
       dsInferError(
@@ -445,7 +445,7 @@ NvDsInferStatus DlaFullDimTrtBackendContext::enqueueBuffer(
   }
 
   /* Parallel enqueue for multiple DLA engines fails. Serialize enqueue
-   * calls for DLA engines with a static mutex. */
+     * calls for DLA engines with a static mutex. */
   std::unique_lock<std::mutex> locker(sDLAExecutionMutex);
 
   if (!m_Context->enqueueV2(bindingBuffers.data(), stream,
