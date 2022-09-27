@@ -135,14 +135,47 @@ void attach_metadata_detector(GstNvInfer *nvinfer,
     text_params.font_params.font_size = 11;
     text_params.font_params.font_color = (NvOSD_ColorParams){1, 1, 1, 1};
 
-    if (nvinfer->output_instance_mask && obj.mask) {
-      float *mask = (float *)g_malloc(obj.mask_size);
-      memcpy(mask, obj.mask, obj.mask_size);
-      obj_meta->mask_params.data = mask;
-      obj_meta->mask_params.size = obj.mask_size;
-      obj_meta->mask_params.threshold = segmentationThreshold;
-      obj_meta->mask_params.width = obj.mask_width;
-      obj_meta->mask_params.height = obj.mask_height;
+    // if (nvinfer->output_instance_mask && obj.mask) {
+    //   float *mask = (float *)g_malloc(obj.mask_size);
+    //   memcpy(mask, obj.mask, obj.mask_size);
+    //   obj_meta->mask_params.data = mask;
+    //   obj_meta->mask_params.size = obj.mask_size;
+    //   obj_meta->mask_params.threshold = segmentationThreshold;
+    //   obj_meta->mask_params.width = obj.mask_width;
+    //   obj_meta->mask_params.height = obj.mask_height;
+    // }
+
+    // 05-09-2021 kienvt
+    if (obj.mask) {
+      if (nvinfer->output_instance_mask) {
+        float *mask = (float *)g_malloc(obj.mask_size);
+        memcpy(mask, obj.mask, obj.mask_size);
+        obj_meta->mask_params.data = mask;
+        obj_meta->mask_params.size = obj.mask_size;
+        obj_meta->mask_params.threshold = segmentationThreshold;
+        obj_meta->mask_params.width = obj.mask_width;
+        obj_meta->mask_params.height = obj.mask_height;
+      } else if (nvinfer->attach_points) {
+        float *mask = (float *)g_malloc(obj.mask_size);
+        memcpy(mask, obj.mask, obj.mask_size);
+
+        // Scale the point coords proportionally based on how the object/frame
+        // was scaled during input.
+        for (auto i = 0; i < obj.mask_height; i++) {
+          mask[i * 2] /= frame.scale_ratio_x;
+          mask[i * 2 + 1] /= frame.scale_ratio_y;
+          if (!nvinfer->process_full_frame) {
+            mask[i * 2] += parent_obj_meta->rect_params.left;
+            mask[i * 2 + 1] += parent_obj_meta->rect_params.top;
+          }
+        }
+
+        obj_meta->mask_params.data = mask;
+        obj_meta->mask_params.size = obj.mask_size;
+        obj_meta->mask_params.width = obj.mask_width;
+        obj_meta->mask_params.height = obj.mask_height;
+        obj_meta->mask_params.threshold = 0.0f;
+      }
     }
 
     nvds_add_obj_meta_to_frame(frame_meta, obj_meta, parent_obj_meta);

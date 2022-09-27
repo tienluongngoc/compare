@@ -25,6 +25,15 @@
 
 extern const int DEFAULT_REINFER_INTERVAL;
 
+// 05-09-2021 kienvt
+bool EndsWith(const char *str, const char *suffix) {
+  if (!str || !suffix) return false;
+  size_t lenstr = strlen(str);
+  size_t lensuffix = strlen(suffix);
+  if (lensuffix > lenstr) return false;
+  return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+}
+
 /* Get the absolute path of a file mentioned in the config given a
  * file path absolute/relative to the config file. */
 static gboolean get_absolute_file_path(const gchar *cfg_file_path,
@@ -365,11 +374,19 @@ static gboolean gst_nvinfer_parse_other_attribute(GstNvInfer *nvinfer,
       goto done;
     }
   } else if (!g_strcmp0(key, CONFIG_GROUP_INFER_OUTPUT_TENSOR_META)) {
+    if ((*nvinfer
+              ->is_prop_set)[PROP_OUTPUT_TENSOR_META]) {  // 11-09-2021 kienvt
+      return TRUE;
+    }
     if (g_key_file_get_boolean(key_file, group_name,
                                CONFIG_GROUP_INFER_OUTPUT_TENSOR_META, &error))
       nvinfer->output_tensor_meta = TRUE;
     CHECK_ERROR(error);
   } else if (!g_strcmp0(key, CONFIG_GROUP_INFER_OUTPUT_INSTANCE_MASK)) {
+    if ((*nvinfer
+              ->is_prop_set)[PROP_OUTPUT_INSTANCE_MASK]) {  // 11-09-2021 kienvt
+      return TRUE;
+    }
     if (g_key_file_get_boolean(key_file, group_name,
                                CONFIG_GROUP_INFER_OUTPUT_INSTANCE_MASK, &error))
       nvinfer->output_instance_mask = TRUE;
@@ -456,6 +473,10 @@ static gboolean gst_nvinfer_parse_other_attribute(GstNvInfer *nvinfer,
     }
     g_free(int_list);
   } else if (!g_strcmp0(key, CONFIG_GROUP_INFER_CLASS_IDS_FOR_FILTERING)) {
+    if ((*nvinfer
+              ->is_prop_set)[PROP_FILTER_OUT_CLASS_IDS]) {  // 11-09-2021 kienvt
+      return TRUE;
+    }
     gsize length;
 
     gint *int_list = g_key_file_get_integer_list(
@@ -832,6 +853,8 @@ static gboolean gst_nvinfer_parse_props(GstNvInfer *nvinfer,
       CHECK_ERROR(error);
       g_strlcpy(init_params->customBBoxInstanceMaskParseFuncName, str,
                 _MAX_STR_LENGTH);
+      if (EndsWith(str, "AttachPoints"))
+        nvinfer->attach_points = TRUE;  // 05-09-2021 kient
       g_free(str);
     } else if (!g_strcmp0(*key, CONFIG_GROUP_INFER_CUSTOM_ENGINE_CREATE_FUNC)) {
       gchar *str = g_key_file_get_string(
@@ -980,7 +1003,7 @@ static gboolean gst_nvinfer_parse_props(GstNvInfer *nvinfer,
             (unsigned int)int_list[0], (unsigned int)int_list[1],
             (unsigned int)int_list[2]};
         g_free(int_list);
-      } else
+      } else 
         g_printerr(
             "Warning: Ignoring 'uff-input-dims' parameter since 'infer-dims' "
             "has been set.\n");
@@ -1150,6 +1173,19 @@ static gboolean gst_nvinfer_parse_props(GstNvInfer *nvinfer,
           goto done;
           break;
       }
+    } else if (!g_strcmp0(*key,
+                          CONFIG_GROUP_INFER_TRANSFORM_OBJECTS)) {  // 06-09-2021
+                                                                    // kienvt
+      if ((*nvinfer
+                ->is_prop_set)[PROP_TRANSFORM_OBJECTS]) {  // 11-09-2021 kienvt
+        return TRUE;
+      }
+      if (g_key_file_get_boolean(key_file, CONFIG_GROUP_PROPERTY,
+                                 CONFIG_GROUP_INFER_TRANSFORM_OBJECTS,
+                                 &error)) {
+        nvinfer->transform_objects = TRUE;
+      }
+      CHECK_ERROR(error);
     } else if (nvinfer) {
       if (!gst_nvinfer_parse_other_attribute(
               nvinfer, key_file, CONFIG_GROUP_PROPERTY, *key, cfg_file_path)) {

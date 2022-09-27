@@ -147,6 +147,10 @@
 #define CONFIG_GROUP_INFER_CLASS_ATTRS_NMS_IOU_THRESHOLD "nms-iou-threshold"
 #define CONFIG_GROUP_INFER_CLASS_ATTRS_TOP_K "topk"
 
+/** Custom parameters */
+#define CONFIG_GROUP_INFER_TRANSFORM_OBJECTS \
+  "transform-objects"  // 06-09-2021 kienvt
+
 gboolean gst_nvinfer_parse_config_file(GstNvInfer *nvinfer,
                                        NvDsInferContextInitParams *init_params,
                                        const gchar *cfg_file_path);

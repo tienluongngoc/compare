@@ -14,20 +14,18 @@
 
 #include <gst/base/gstbasetransform.h>
 #include <gst/video/video.h>
+#include <nvdsinfer_context.h>
 
+#include <memory>
+#include <opencv2/core/cuda.hpp>
 #include <set>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
 #include "cuda_runtime_api.h"
-#include "nvbufsurftransform.h"
-#include <nvdsinfer_context.h>
-
 #include "gstnvdsinfer.h"
-
 #include "gstnvdsmeta.h"
-
+#include "nvbufsurftransform.h"
 #include "nvtx3/nvToolsExt.h"
 
 /* Package and library details required for plugin_init */
@@ -75,6 +73,7 @@ enum
   PROP_OUTPUT_CALLBACK_USERDATA,
   PROP_OUTPUT_TENSOR_META,
   PROP_OUTPUT_INSTANCE_MASK,
+  PROP_TRANSFORM_OBJECTS,  // 06-09-2021 kienvt
   PROP_LAST
 };
 
@@ -104,7 +103,7 @@ typedef struct
 /**
  * Holds the bounding box coloring information for one class;
  */
-typedef struct
+typedef struct 
 {
   gboolean have_border_color;
   NvOSD_ColorParams border_color;
@@ -133,7 +132,7 @@ struct GstNvInferObjectInfo {
  * Holds the inference information/history for one object based on it's
  * tracking id.
  */
-typedef struct _GstNvInferObjectHistory
+typedef struct _GstNvInferObjectHistory 
 {
   /** Boolean indicating if the object is already being inferred on. */
   gboolean under_inference;
@@ -155,7 +154,7 @@ typedef std::unordered_map<guint64, std::shared_ptr<GstNvInferObjectHistory>> Gs
 /**
  * Holds source-specific information.
  */
-typedef struct
+typedef struct 
 {
   /** Map of object tracking ID and the object infer history. */
   GstNvInferObjectHistoryMap object_history_map;
@@ -168,7 +167,7 @@ typedef struct
 /**
  * GstNvInfer element structure.
  */
-struct _GstNvInfer
+struct _GstNvInfer 
 {
   /** Should be the first member when extending from GstBaseTransform. */
   GstBaseTransform base_trans;
@@ -225,6 +224,7 @@ struct _GstNvInfer
 
   /** Cuda Stream to launch npp operations on. */
   cudaStream_t convertStream;
+  std::unique_ptr<cv::cuda::Stream> cv_cuda_stream_ptr;  // 07-09-2021 kienvt
 
   /** Boolean indicating if aspect ratio should be maintained when scaling to
    * network resolution. Right/bottom areas will be filled with black areas. */
@@ -305,6 +305,9 @@ struct _GstNvInfer
    *  has to be attached in metadata */
   gboolean output_instance_mask;
 
+  gboolean attach_points;      // 05-09-2021 kienvt
+  gboolean transform_objects;  // 06-09-2021 kienvt
+
   /** PTS of input buffer when nvinfer last posted the warning about untracked
    * object. */
   GstClockTime untracked_object_warn_pts;
@@ -321,9 +324,9 @@ struct _GstNvInferClass {
 
   /** Signals */
   /** signal : model-update
-    * err: int, error result, type NvDsInferStatus.
-    * cfg_file: update cfg file.
-    */
+   * err: int, error result, type NvDsInferStatus.
+   * cfg_file: update cfg file.
+   */
   void (*model_updated) (GstNvInfer *, gint err, const gchar *cfg_file);
 };
 
